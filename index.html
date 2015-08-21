@@ -1,0 +1,269 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+
+    <title>Directional Line Symbol</title>
+    <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+
+    <style>
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Calibri;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            position: relative;
+        }
+
+        #options {
+            position: absolute;
+            z-index: 1000;
+            bottom: 0px;
+            left: 0px;
+            font-size: 0.8em;
+            background-color: rgba(0,0,0,0.7);
+            width: 100%;
+            padding: 8px 0px 10px 20px;
+            color: #FFF;
+            font-weight: bold;
+        }
+
+            #options select {
+                height: 25px;
+                border-radius: 5px;
+                margin-right: 20px;
+            }
+
+            #options button {
+                height: 25px;
+                border-radius: 5px;
+                margin-right: 10px;
+            }
+
+
+        #stats {
+            position: absolute;
+            bottom: 15px;
+            left: 20px;
+            font-size: 1.1em;
+            z-index: 1000;
+        }
+    </style>
+
+
+    <script>
+        var dojoConfig = {
+            parseOnLoad: false,
+            async: true,
+            tlmSiblingOfDojo: false,
+            packages: [{
+                name: "ncam",
+                location: location.pathname.replace(/\/[^/]+$/, '') + "ncam"
+            }]
+        };
+    </script>
+
+    <script src="http://js.arcgis.com/3.14/"></script>
+
+    <script type="text/javascript">
+
+        var map;
+        var drawToolbar;
+        var directionalSymbols = [];
+
+        require(["esri/map", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "ncam/DirectionalLineSymbol",
+               "esri/symbols/SimpleMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/symbols/SimpleFillSymbol", "esri/toolbars/draw",
+                "dojo/ready", "dojo/dom", "dojo/on"],
+        function (Map, GraphicsLayer, Graphic, Polyline, Polygon, DirectionalLineSymbol, SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol, Draw, ready, dom, on) {
+
+            ready(function () {
+
+                map = new Map("map", {
+                    center: [133, -25],
+                    zoom: 4,
+                    basemap: "gray",
+                    minZoom: 3
+                });
+
+
+                map.on("load", function () {
+
+                    var graphicsLayer = new GraphicsLayer({ id: "graphicsLayer" });
+                    map.addLayer(graphicsLayer);
+
+                    //add a basic polyline
+                    var basicOptions = {
+                        style: SimpleLineSymbol.STYLE_SOLID,
+                        color: new dojo.Color([0, 0, 0]),
+                        width: 2,
+                        directionScale: 0.6,
+                        directionStyle: "doublePointer",
+                        directionPixelBuffer: 40
+                    };
+                    var basicSymbol = new DirectionalLineSymbol(basicOptions);
+                    var basicPolyline = new Polyline([[119, -23], [126, -20], [134, -22], [133, -12], [133.2, -12.3]]);
+                    var bg = new Graphic(basicPolyline, basicSymbol, {}, null);
+                    graphicsLayer.add(bg);
+
+                    directionalSymbols.push(basicSymbol);
+
+                    //add a polyline with 3 paths
+                    var advOptions = {
+                        style: SimpleLineSymbol.STYLE_DASH,
+                        color: new dojo.Color([51, 102, 255]),
+                        width: 2,
+                        directionStyle: "arrow1",
+                        directionPixelBuffer: 60,
+                        directionColor: new dojo.Color([204, 51, 0]),
+                        directionScale: 0.7
+                    };
+                    var advSymbol = new DirectionalLineSymbol(advOptions);
+                    var advPolyline = new Polyline([[[119, -28], [126, -25], [134, -27], [140, -20]],
+                                                    [[119, -30], [126, -27], [134, -29], [140, -22]],
+                                                    [[140, -24], [134, -31], [126, -29], [119, -32]]]);
+                    var ag = new Graphic(advPolyline, advSymbol, {}, null);
+                    graphicsLayer.add(ag);
+                    directionalSymbols.push(advSymbol);
+
+                    var pgOptions = {
+                        style: SimpleLineSymbol.STYLE_SOLID,
+                        color: new dojo.Color([51, 102, 255]),
+                        width: 2,
+                        directionStyle: "arrow2",
+                        directionPixelBuffer: 30,
+                        directionColor: new dojo.Color([41, 82, 204]),
+                        directionScale: 0.8
+                    };
+                    var pgSymbol = new DirectionalLineSymbol(pgOptions);
+                    var polygonSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, pgSymbol, new dojo.Color([0, 255, 0, 0.4]));
+                    var polygon = new Polygon([[143, -26], [152, -29], [146, -36], [138, -33], [143, -26]]);
+                    var pg = new Graphic(polygon, polygonSymbol, {}, null);
+                    graphicsLayer.add(pg);
+                    directionalSymbols.push(pgSymbol);
+
+                    var drawOptions = {
+                        style: SimpleLineSymbol.STYLE_SOLID,
+                        color: new dojo.Color([255, 102, 0]),
+                        width: 1,
+                        directionScale: 0.7,
+                        directionStyle: "arrow3",
+                        directionPixelBuffer: 50,
+                        directionColor: new dojo.Color([0, 153, 51])
+                    };
+                    var drawLineSymbol = new DirectionalLineSymbol(drawOptions);
+                    directionalSymbols.push(drawLineSymbol);
+
+                    drawToolbar = new Draw(map);
+
+                    var drawFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_FORWARD_DIAGONAL, drawLineSymbol, new dojo.Color([102, 0, 102, 0.4]));
+                    drawToolbar.setLineSymbol(drawLineSymbol);
+                    drawToolbar.setFillSymbol(drawFillSymbol);
+
+                    drawToolbar.on("draw-end", function (e) {
+                        this.deactivate();
+                        var symbol = e.geometry.type === "polyline" ? drawLineSymbol : drawFillSymbol;
+                        var g = new Graphic(e.geometry, symbol, {}, null);
+                        graphicsLayer.add(g);
+                    });
+
+                });
+
+                on(dom.byId("animation-repeat"), "change", function () {
+                    //set up animation repeat for all of the DirectionalLineSymbol's created earlier
+                    for (var i = 0, len = directionalSymbols.length; i < len; i++) {
+                        directionalSymbols[i].stopAnimation();
+                        var duration = parseInt(dom.byId("animation-duration").value);
+                        if (this.value) {
+                            directionalSymbols[i].animateDirection(this.value, duration);
+                        }
+                    }
+                });
+
+                on(dom.byId("animation-duration"), "change", function () {
+                    //set up animation duration for all of the DirectionalLineSymbol's created earlier
+                    var repeat = dom.byId("animation-repeat").value;
+                    if (!repeat) return;
+
+                    for (var i = 0, len = directionalSymbols.length; i < len; i++) {
+                        directionalSymbols[i].stopAnimation();
+                        directionalSymbols[i].animateDirection(repeat, this.value);
+
+                    }
+                });
+
+
+                on(dom.byId("draw-polyline"), "click", function () {
+                    drawToolbar.activate(Draw.POLYLINE);
+                });
+
+                on(dom.byId("draw-freehand"), "click", function () {
+                    drawToolbar.activate(Draw.FREEHAND_POLYLINE);
+                });
+
+                on(dom.byId("draw-polygon"), "click", function () {
+                    drawToolbar.activate(Draw.POLYGON);
+                });
+
+                on(dom.byId("draw-fh-polygon"), "click", function () {
+                    drawToolbar.activate(Draw.FREEHAND_POLYGON);
+                });
+
+            });
+
+
+        });
+
+
+    </script>
+
+
+</head>
+<body>
+
+    <div id="map">
+
+        <div id="options">
+
+            <label>Animation repeat:</label>
+            <select id="animation-repeat">
+                <option value="">no animation</option>
+                <option value="1">1</option>
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="Infinity">Infinity</option>
+            </select>
+
+            <label>Animation duration:</label>
+            <select id="animation-duration">
+                <option value="150">150</option>
+                <option value="250">250</option>
+                <option value="350" selected="selected">350</option>
+                <option value="450">450</option>
+            </select>
+
+
+            <button id="draw-polyline">Draw polyline</button>
+            <button id="draw-freehand">Draw freehand polyline</button>
+            <button id="draw-polygon">Draw polygon</button>
+            <button id="draw-fh-polygon">Draw freehand polygon</button>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
