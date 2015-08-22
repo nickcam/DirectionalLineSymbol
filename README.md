@@ -23,7 +23,7 @@ var s = new DirectionalLineSymbol(options);
 ...and all sorted. But to do that had to add graphic specific functions and event handlers for
 graphics layers and the map (only once though) within DirectionalLineSymobl. So I can understand why this isn't in the actual api, but wanted a solution anyway.
 
-Code is commented and the options explained in the constructor. How to use is in index.html and on the example site:
+Code is commented and the options explained in the constructor. How to use is in index.html which is the same as this example page:
 http://directionallinesymbol.azurewebsites.net/
 
 Add to, edit or find bugs, thanks!
