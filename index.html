@@ -8,8 +8,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 
     <title>Directional Line Symbol</title>
-    <link rel="stylesheet" href="http://js.arcgis.com/3.14/esri/css/esri.css">
-    <link rel="stylesheet" href="http://js.arcgis.com/3.14/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.15/esri/css/esri.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.15/dijit/themes/claro/claro.css">
 
     <style>
         html, body {
@@ -31,12 +31,12 @@
         #options {
             position: absolute;
             z-index: 1000;
-            bottom: 0px;
-            left: 0px;
+            bottom: 0;
+            left: 0;
             font-size: 0.8em;
             background-color: rgba(0,0,0,0.7);
             width: 100%;
-            padding: 8px 0px 10px 20px;
+            padding: 8px 0 10px 20px;
             color: #FFF;
             font-weight: bold;
         }
@@ -47,12 +47,26 @@
                 margin-right: 20px;
             }
 
-            #options button {
+            #options button, .esriPrintButton {
                 height: 25px;
-                border-radius: 5px;
-                margin-right: 10px;
+                /*border-radius: 5px;*/
+                margin: 0 10px 0 0;
+                background: #e5e5e5;
+                border: 1px solid #b5b5b5;
+                color: #333;
+                padding: 0 10px;
             }
 
+                .esriPrintButton .dijitButtonNode {
+                    border: none;
+                    color: #333;
+                    font-weight: normal;
+                    margin-top: 3px;
+                }
+
+        .esriPrintout {
+            color: #FFF;
+        }
 
         #stats {
             position: absolute;
@@ -60,6 +74,11 @@
             left: 20px;
             font-size: 1.1em;
             z-index: 1000;
+        }
+
+        .esriPrint {
+            display: inline;
+            padding: 0;
         }
     </style>
 
@@ -76,7 +95,7 @@
         };
     </script>
 
-    <script src="http://js.arcgis.com/3.14/"></script>
+    <script src="http://js.arcgis.com/3.15/"></script>
 
     <script type="text/javascript">
 
@@ -84,12 +103,17 @@
         var drawToolbar;
         var directionalSymbols = [];
 
-        require(["esri/map", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "ncam/DirectionalLineSymbol",
-               "esri/symbols/SimpleMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/symbols/SimpleFillSymbol", "esri/toolbars/draw",
+        require(["esri/map", "esri/Color", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "ncam/DirectionalLineSymbol",
+               "esri/symbols/SimpleMarkerSymbol", "esri/symbols/PictureMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/symbols/SimpleFillSymbol", "esri/toolbars/draw", "esri/dijit/Print", "esri/config", "esri/request",
                 "dojo/ready", "dojo/dom", "dojo/on"],
-        function (Map, GraphicsLayer, Graphic, Polyline, Polygon, DirectionalLineSymbol, SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol, Draw, ready, dom, on) {
+        function (Map, Color, GraphicsLayer, Graphic, Polyline, Polygon, DirectionalLineSymbol,
+            SimpleMarkerSymbol, PictureMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol, Draw, Print, config, request,
+            ready, dom, on) {
 
             ready(function () {
+
+                //for the sample print server
+                esriConfig.defaults.io.corsEnabledServers.push("sampleserver6.arcgisonline.com");
 
                 map = new Map("map", {
                     center: [133, -25],
@@ -98,21 +122,26 @@
                     minZoom: 3
                 });
 
-
                 map.on("load", function () {
 
                     var graphicsLayer = new GraphicsLayer({ id: "graphicsLayer" });
                     map.addLayer(graphicsLayer);
 
+                    //example using a picture marker symbol.
+                    var picSymbol = new PictureMarkerSymbol();
+                    picSymbol.setUrl("ncam/filled-arrow.png");
+                    picSymbol.setHeight(12);
+                    picSymbol.setWidth(12);
+
                     //add a basic polyline
                     var basicOptions = {
                         style: SimpleLineSymbol.STYLE_SOLID,
-                        color: new dojo.Color([0, 0, 0]),
+                        color: new Color([0, 0, 0]),
                         width: 2,
-                        directionScale: 0.6,
-                        directionStyle: "doublePointer",
-                        directionPixelBuffer: 40
+                        directionSymbol: picSymbol,
+                        directionPixelBuffer: 40,
                     };
+
                     var basicSymbol = new DirectionalLineSymbol(basicOptions);
                     var basicPolyline = new Polyline([[119, -23], [126, -20], [134, -22], [133, -12], [133.2, -12.3]]);
                     var bg = new Graphic(basicPolyline, basicSymbol, {}, null);
@@ -123,12 +152,12 @@
                     //add a polyline with 3 paths
                     var advOptions = {
                         style: SimpleLineSymbol.STYLE_DASH,
-                        color: new dojo.Color([51, 102, 255]),
+                        color: new Color([51, 102, 255]),
                         width: 2,
-                        directionStyle: "arrow1",
+                        directionSymbol: "arrow1",
                         directionPixelBuffer: 60,
-                        directionColor: new dojo.Color([204, 51, 0]),
-                        directionScale: 0.7
+                        directionColor: new Color([204, 51, 0]),
+                        directionSize: 14
                     };
                     var advSymbol = new DirectionalLineSymbol(advOptions);
                     var advPolyline = new Polyline([[[119, -28], [126, -25], [134, -27], [140, -20]],
@@ -140,15 +169,15 @@
 
                     var pgOptions = {
                         style: SimpleLineSymbol.STYLE_SOLID,
-                        color: new dojo.Color([51, 102, 255]),
+                        color: new Color([51, 102, 255]),
                         width: 2,
-                        directionStyle: "arrow2",
+                        directionSymbol: "arrow2",
                         directionPixelBuffer: 30,
-                        directionColor: new dojo.Color([41, 82, 204]),
+                        directionColor: new Color([41, 82, 204]),
                         directionScale: 0.8
                     };
                     var pgSymbol = new DirectionalLineSymbol(pgOptions);
-                    var polygonSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, pgSymbol, new dojo.Color([0, 255, 0, 0.4]));
+                    var polygonSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, pgSymbol, new Color([0, 255, 0, 0.4]));
                     var polygon = new Polygon([[143, -26], [152, -29], [146, -36], [138, -33], [143, -26]]);
                     var pg = new Graphic(polygon, polygonSymbol, {}, null);
                     graphicsLayer.add(pg);
@@ -156,19 +185,19 @@
 
                     var drawOptions = {
                         style: SimpleLineSymbol.STYLE_SOLID,
-                        color: new dojo.Color([255, 102, 0]),
+                        color: new Color([255, 102, 0]),
                         width: 1,
                         directionScale: 0.7,
-                        directionStyle: "arrow3",
+                        directionSymbol: "arrow3",
                         directionPixelBuffer: 50,
-                        directionColor: new dojo.Color([0, 153, 51])
+                        directionColor: new Color([0, 153, 51])
                     };
                     var drawLineSymbol = new DirectionalLineSymbol(drawOptions);
                     directionalSymbols.push(drawLineSymbol);
 
                     drawToolbar = new Draw(map);
 
-                    var drawFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_FORWARD_DIAGONAL, drawLineSymbol, new dojo.Color([102, 0, 102, 0.4]));
+                    var drawFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_FORWARD_DIAGONAL, drawLineSymbol, new Color([102, 0, 102, 0.4]));
                     drawToolbar.setLineSymbol(drawLineSymbol);
                     drawToolbar.setFillSymbol(drawFillSymbol);
 
@@ -180,6 +209,14 @@
                     });
 
                 });
+
+
+                //set up the print dijit to point to the arcgis sample print task. No formatting or anything set up so it looks pretty nasty.
+                var printer = new Print({
+                    map: map,
+                    url: "http://sampleserver6.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
+                }, dom.byId("print-map"));
+                printer.startup();
 
                 on(dom.byId("animation-repeat"), "change", function () {
                     //set up animation repeat for all of the DirectionalLineSymbol's created earlier
@@ -260,6 +297,8 @@
             <button id="draw-freehand">Draw freehand polyline</button>
             <button id="draw-polygon">Draw polygon</button>
             <button id="draw-fh-polygon">Draw freehand polygon</button>
+
+            <span id="print-map"></span>
 
         </div>
 
