@@ -54,8 +54,7 @@
                 arrow1: "m0.5,50.5c0,0 99.5,-41 99.5,-41c0,0 0.5,81.5 0.5,81.5c0,0 -100,-40.5 -100,-40.5z",
                 arrow2: "M1,50l99.5,-50c0,0 -40,49.5 -40,49.5c0,0 39.5,50 39.5,50c0,0 -99,-49.5 -99,-49.5z",
                 arrow3: "m0.5,50.5l90,-50l9,9.5l-79.5,40.5l80,39.5l-10,10.5l-89.5,-50z",
-                arrow4: "m55.4605,51.5754l43.0685,-48.2908l-43.3797,48.2908l43.8197,44.8899l-43.5085,-44.8899zm-6.0505,42.3899l-0.44,-88.1807l-43.37967,45.7908l43.81967,42.3899z",
-                arrow5: "m2.37495,0.37501c0,0 96.75,55.125 96.75,55.125c0,0 -98.4375,43.875 -98.4375,43.875c0,0 1.6875,-99 1.6875,-99z"
+                arrow4: "m55.4605,51.5754l43.0685,-48.2908l-43.3797,48.2908l43.8197,44.8899l-43.5085,-44.8899zm-6.0505,42.3899l-0.44,-88.1807l-43.37967,45.7908l43.81967,42.3899z"
             };
 
             this.directionColor = options.directionColor || this.color; //a color for the direction symbol, default to the line color
@@ -104,8 +103,9 @@
             if (!layer.dlsGraphicRemove) {
                 layer.dlsGraphicRemove = layer.on("graphic-remove", function (e) {
                     if (e.graphic.dlsSymbolGroup) {
-                        //remove all direction symbols if the graphic has any
+                        //remove all direction symbols if the graphic has any and destroy the group node
                         dojo.query(".dls-symbol", e.graphic.dlsSymbolGroup.rawNode).forEach(dojo.destroy);
+                        dojo.destroy(e.graphic.dlsSymbolGroup.rawNode);
                         e.graphic.dlsSymbolGroup = null;
                     }
                 });
@@ -250,7 +250,7 @@
                         var mp = map.toMap(sp);
                         g.geometry = mp;
                         graphicsLayer.add(g);
-                        //map.dlsGraphicsLayer.add(g);
+
                         var s = g.getShape();
                         group.add(s);
                         g.attr("class", "dls-symbol");
@@ -259,7 +259,7 @@
 
                         g.origJson = g.toJson();
                         g.toJson = this.directionGraphicToJson;
-                        //console.log(g.origJson);
+
 
                     }
                 }
