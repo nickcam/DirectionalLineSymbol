@@ -80,6 +80,19 @@
             display: inline;
             padding: 0;
         }
+
+        @keyframes dlsLine{
+            from{
+                stroke-dashoffset: 1000;
+            }         
+        }
+
+         svg>g>path.dls-line{
+            animation: dlsLine;
+            animation-duration: 45s;                
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
     </style>
 
 
@@ -103,7 +116,7 @@
         var drawToolbar;
         var directionalSymbols = [];
 
-        require(["esri/map", "esri/Color", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "ncam/DirectionalLineSymbol",
+        require(["esri/map", "esri/Color", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "./ncam/DirectionalLineSymbol.js",
                "esri/symbols/SimpleMarkerSymbol", "esri/symbols/PictureMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/symbols/SimpleFillSymbol", "esri/toolbars/draw", "esri/dijit/Print", "esri/config", "esri/request",
                 "dojo/ready", "dojo/dom", "dojo/on"],
         function (Map, Color, GraphicsLayer, Graphic, Polyline, Polygon, DirectionalLineSymbol,
@@ -135,11 +148,12 @@
 
                     //add a basic polyline
                     var basicOptions = {
-                        style: SimpleLineSymbol.STYLE_SOLID,
+                        style: SimpleLineSymbol.STYLE_DASHDOTDOT,
                         color: new Color([0, 0, 0]),
                         width: 2,
                         directionSymbol: picSymbol,
                         directionPixelBuffer: 40,
+                        animateLine: true
                     };
 
                     var basicSymbol = new DirectionalLineSymbol(basicOptions);

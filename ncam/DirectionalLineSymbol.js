@@ -1,6 +1,7 @@
 ﻿define([
   "dojo/_base/declare",
   "dojo/_base/lang",
+  "dojo/_base/array",
   "dojo/query",
   "dojo/dom",
   "dojo/dom-construct",
@@ -15,13 +16,16 @@
   "esri/geometry/Point",
   "esri/geometry/ScreenPoint",
 
+  "dojo/dom-attr",
+
   "dojo/_base/fx",
   "dojo/fx",
   "dojox/gfx/fx",
   "dojo/on"
 ], function (
-  declare, lang, query, dom, domConstruct, domStyle, gfx,
+  declare, lang, array, query, dom, domConstruct, domStyle, gfx,
   screenUtils, SimpleLineSymbol, SimpleMarkerSymbol, PictureMarkerSymbol, Graphic, Point, ScreenPoint,
+  domAttr,
   fx, coreFx, shapeFx, on
 ) {
     return declare([SimpleLineSymbol], {
@@ -32,7 +36,7 @@
                 directionSymbol (string or SimpleMarkerSymbol or PictureMarkerSymbol): default 'arrow1'.
                                  This can be one of four things
                                  1) a string that is one of the pre-defined paths, 'arrow1', 'arrow2', 'arrow3' or 'arrow4'
-                                 2) a string that represents a path attrbiute value to apply to the graphic. Should point to the left <-- and the angle calcs will take care of positioning.
+                                 2) a string that represents a path attribute value to apply to the graphic. Should point to the left <-- and the angle calcs will take care of positioning.
                                  3) A PictureMarkerSymbol. The picture should be pointed to the left <-- and the angle cals will position it.
                                  4) A SimpleMarker Symbol. Could be a standard one or one with a custom path. If a custom path, could just pass the path as a string as in option 2. Also position pointing left.
                 
@@ -64,111 +68,112 @@
             this.animationRepeat = options.animationRepeat; //number : default undefined: the animation repeat to apply. If set will start animating straight away.
             this.animationDuration = options.animationDuration || 350; //number default 350. The milliseconds to fade in when animating
 
-            this.directionSymbol = options.directionSymbol || "arrow1";
+            this.directionSymbol = options.directionSymbol || null;
 
             this.graphics = [];
 
             this.drawGraphicDirection = this._drawDirection;
             this.type = "DirectionalLineSymbol";
 
-
+            this.useDirectionGraphic = this.directionSymbol == null ? false : true;
+            this.animateLine = options.animateLine || false;
         },
 
 
         getStroke: function () {
             //Use getStroke to init the direction graphics
 
-            //Get the graphic, walk the call stack up. Do it slightly differently depending on whether it's a polyline or polygon, (SimpleLineSymbol or SimpleFillSymbol)
-            var graphic = arguments.callee.caller.arguments.length > 0 ? arguments.callee.caller.arguments[4] : arguments.callee.caller.caller.arguments[4];
-            if (!graphic) {
-                return this.inherited(arguments); //couldn't find a graphic
-            }
+            if(this.useDirectionGraphic){
+                //Get the graphic, walk the call stack up. Do it slightly differently depending on whether it's a polyline or polygon, (SimpleLineSymbol or SimpleFillSymbol)
+                var graphic = arguments.callee.caller.arguments.length > 0 ? arguments.callee.caller.arguments[4] : arguments.callee.caller.caller.arguments[4];
+                if(graphic && (graphic.dlsSymbolGroup == null || graphic.dlsSymbolGroup == undefined)){
+                    this.graphics.push(graphic);
 
-            if (graphic.dlsSymbolGroup) {
-                return this.inherited(arguments); //this graphic already has a dlsSymbolGroup property so nothing to init.
-            }
+                    //create a group for this graphics direction symbols
+                    var layer = graphic.getLayer();
+                    var map = layer.getMap();
 
-            this.graphics.push(graphic);
+                    graphic.dlsSymbolGroup = layer._div.createGroup();
 
-            //create a group for this graphics direction symbols
-            var layer = graphic.getLayer();
-            var map = layer.getMap();
+                    //draw the direction symbols for the first time
+                    this._drawDirection(graphic, layer, map);
 
-            graphic.dlsSymbolGroup = layer._div.createGroup();
-
-            //draw the direction symbols for the first time
-            this._drawDirection(graphic, layer, map);
-
-            //add graphic remove event to the layer if it doesn't already exist
-            if (!layer.dlsGraphicRemove) {
-                layer.dlsGraphicRemove = layer.on("graphic-remove", function (e) {
-                    if (e.graphic.dlsSymbolGroup) {
-                        //remove all direction symbols if the graphic has any and destroy the group node
-                        dojo.query(".dls-symbol", e.graphic.dlsSymbolGroup.rawNode).forEach(dojo.destroy);
-                        dojo.destroy(e.graphic.dlsSymbolGroup.rawNode);
-                        e.graphic.dlsSymbolGroup = null;
-                    }
-                });
-            }
-
-            //add a graphic draw event if the layer of this graphic is the map.graphics layer. This is so the draw toolbar will refresh with symbols when drawing
-            if (!map.graphics.dlsGraphicDraw) {
-                map.graphics.dlsGraphicDraw = map.graphics.on("graphic-draw", function (e) {
-                    if (e.graphic.dlsSymbolGroup) {
-                        var g = e.graphic;
-                        var sym = g.symbol.type === "DirectionalLineSymbol" ? g.symbol : g.symbol.outline && g.symbol.outline.type === "DirectionalLineSymbol" ? g.symbol.outline : null;
-                        if (sym) {
-                            sym.drawGraphicDirection(g, this, this.getMap());
-                        }
-                    }
-                });
-            }
-
-            if (!map.dlsExtChanged) {
-                map.dlsExtChanged = map.on("extent-change", function (e) {
-                    //loop the map graphics layer looking for directional line symnbols
-                    for (var i = 0, len = this.graphics.graphics.length; i < len; i++) {
-                        var g = this.graphics.graphics[i];
-                        if (!g.symbol) continue;
-
-                        if (g.attributes && g.attributes.isDirectionalGraphic) {
-                            layer.remove(g);
-                            j--;
-                            jLen--;
-                            continue;
-                        }
-
-                        var sym = g.symbol.type === "DirectionalLineSymbol" ? g.symbol : g.symbol.outline && g.symbol.outline.type === "DirectionalLineSymbol" ? g.symbol.outline : null;
-                        if (sym) {
-                            sym.drawGraphicDirection(g, layer, this);
-                        }
-
+                    //add graphic remove event to the layer if it doesn't already exist
+                    if (!layer.dlsGraphicRemove) {
+                        layer.dlsGraphicRemove = layer.on("graphic-remove", function (e) {
+                            if (e.graphic.dlsSymbolGroup) {
+                                //remove all direction symbols if the graphic has any and destroy the group node
+                                dojo.query(".dls-symbol", e.graphic.dlsSymbolGroup.rawNode).forEach(dojo.destroy);
+                                dojo.destroy(e.graphic.dlsSymbolGroup.rawNode);
+                                e.graphic.dlsSymbolGroup = null;
+                            }
+                        });
                     }
 
-                    //loop any other graphics layers looking for directional line symnbols
-                    for (var i = 0, len = this.graphicsLayerIds.length; i < len; i++) {
-                        var layer = this.getLayer(this.graphicsLayerIds[i]);
-                        if (!layer.dlsGraphicRemove) continue; //skip this layer if it doesn't have the remove event, ie: has no directional line symbols in it.
-                        for (var j = 0, jLen = layer.graphics.length; j < jLen; j++) {
-                            var g = layer.graphics[j];
-                            if (!g.symbol) continue;
+                    //add a graphic draw event if the layer of this graphic is the map.graphics layer. This is so the draw toolbar will refresh with symbols when drawing
+                    if (!map.graphics.dlsGraphicDraw) {
+                        map.graphics.dlsGraphicDraw = map.graphics.on("graphic-draw", function (e) {
+                            if (e.graphic.dlsSymbolGroup) {
+                                var g = e.graphic;
+                                var sym = g.symbol.type === "DirectionalLineSymbol" ? g.symbol : g.symbol.outline && g.symbol.outline.type === "DirectionalLineSymbol" ? g.symbol.outline : null;
+                                if (sym) {
+                                    sym.drawGraphicDirection(g, this, this.getMap());
+                                }
+                            }
+                        });
+                    }
 
-                            if (g.attributes && g.attributes.isDirectionalGraphic) {
-                                layer.remove(g);
-                                j--;
-                                jLen--;
-                                continue;
+                    if (!map.dlsExtChanged) {
+                        map.dlsExtChanged = map.on("extent-change", function (e) {
+                            //loop the map graphics layer looking for directional line symnbols
+                            for (var i = 0, len = this.graphics.graphics.length; i < len; i++) {
+                                var g = this.graphics.graphics[i];
+                                if (!g.symbol) continue;
+
+                                if (g.attributes && g.attributes.isDirectionalGraphic) {
+                                    layer.remove(g);
+                                    j--;
+                                    jLen--;
+                                    continue;
+                                }
+
+                                var sym = g.symbol.type === "DirectionalLineSymbol" ? g.symbol : g.symbol.outline && g.symbol.outline.type === "DirectionalLineSymbol" ? g.symbol.outline : null;
+                                if (sym) {
+                                    sym.drawGraphicDirection(g, layer, this);
+                                }
+
                             }
 
-                            var sym = g.symbol.type === "DirectionalLineSymbol" ? g.symbol : g.symbol.outline && g.symbol.outline.type === "DirectionalLineSymbol" ? g.symbol.outline : null;
-                            if (sym) {
-                                sym.drawGraphicDirection(g, layer, this);
+                            //loop any other graphics layers looking for directional line symnbols
+                            for (var i = 0, len = this.graphicsLayerIds.length; i < len; i++) {
+                                var layer = this.getLayer(this.graphicsLayerIds[i]);
+                                if (!layer.dlsGraphicRemove) continue; //skip this layer if it doesn't have the remove event, ie: has no directional line symbols in it.
+                                for (var j = 0, jLen = layer.graphics.length; j < jLen; j++) {
+                                    var g = layer.graphics[j];
+                                    if (!g.symbol) continue;
+
+                                    if (g.attributes && g.attributes.isDirectionalGraphic) {
+                                        layer.remove(g);
+                                        j--;
+                                        jLen--;
+                                        continue;
+                                    }
+
+                                    var sym = g.symbol.type === "DirectionalLineSymbol" ? g.symbol : g.symbol.outline && g.symbol.outline.type === "DirectionalLineSymbol" ? g.symbol.outline : null;
+                                    if (sym) {
+                                        sym.drawGraphicDirection(g, layer, this);
+                                    }
+                                }
                             }
-
-
-                        }
+                        });
                     }
-                });
+                }
+            }
+            if(this.animateLine){
+                var svgNode = arguments.callee.caller.arguments.length > 0 ? arguments.callee.caller.arguments[0].rawNode : arguments.callee.caller.caller.arguments[0].rawNode;
+                if(svgNode.tagName == "path" && array.indexOf(svgNode.classList, "dls-line") == -1){
+                    svgNode.classList.add("dls-line");
+                }
             }
             return this.inherited(arguments);
         },
