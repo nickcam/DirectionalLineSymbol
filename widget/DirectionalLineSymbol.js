@@ -1,4 +1,4 @@
-﻿define([
+define([
   "dojo/_base/declare",
   "dojo/_base/lang",
   "dojo/_base/array",
@@ -33,7 +33,7 @@
             /* options description:
                 Same options as a SimpleLineSymbol - the extra options described below:
                 
-                directionSymbol (string or SimpleMarkerSymbol or PictureMarkerSymbol): default 'arrow1'.
+                directionSymbol (string or SimpleMarkerSymbol or PictureMarkerSymbol): default null.  If not specified, no arraows will be drawn.
                                  This can be one of four things
                                  1) a string that is one of the pre-defined paths, 'arrow1', 'arrow2', 'arrow3' or 'arrow4'
                                  2) a string that represents a path attribute value to apply to the graphic. Should point to the left <-- and the angle calcs will take care of positioning.
@@ -45,6 +45,8 @@
                 directionPixelBuffer (number) : default 40. This is the gap in pixels between each direction symbol. If the length of a line segment is less than this amount no direction symbol will be drawn on that segment,
                 animationRepeat (number): default undefined. If set the direction symbol will animate displying along the line. The value sets how many time to repeat the whole animation. Use Infinity to go forever. Can also just be set when calling animateDirection() after instantiation.
                 animationDuration (number): default 350. Only used if animationRepeat is set. This is the amount of milliseconds each invidual animation will take to complete. Lower values mean quicker animations.
+                animateLine (boolean): default is false.  Must specify in order to animate line.
+                lineAnimationDuration (number): default is 450.  Number of milliseconds anuimation will take to complete.  Lower values mean quicker animations.
             */
 
             this.inherited(arguments);
@@ -52,7 +54,6 @@
             this.setStyle(options.style);
             this.setColor(options.color);
             this.setWidth(options.width);
-
 
             this.directionSymbols = {
                 arrow1: "m0.5,50.5c0,0 99.5,-41 99.5,-41c0,0 0.5,81.5 0.5,81.5c0,0 -100,-40.5 -100,-40.5z",
@@ -172,6 +173,7 @@
             if(this.animateLine){
                 var svgNode = arguments.callee.caller.arguments.length > 0 ? arguments.callee.caller.arguments[0].rawNode : arguments.callee.caller.caller.arguments[0].rawNode;
                 if(svgNode.tagName == "path" && array.indexOf(svgNode.classList, "dls-line") == -1){
+                    // Note: this only adds the class, CSS must be applied 
                     svgNode.classList.add("dls-line");
                 }
             }
@@ -275,7 +277,6 @@
             }
 
         },
-
 
         _getDirectionPoints: function (pt1, pt2, screenExtent) {
             var points = [];

@@ -87,7 +87,7 @@
             }         
         }
 
-         svg>g>path.dls-line{
+        svg>g>path.dls-line{
             animation: dlsLine;
             animation-duration: 45s;                
             animation-timing-function: linear;
@@ -102,8 +102,8 @@
             async: true,
             tlmSiblingOfDojo: false,
             packages: [{
-                name: "ncam",
-                location: location.pathname.replace(/\/[^/]+$/, '') + "ncam"
+                name: "widget",
+                location: location.pathname.replace(/\/[^/]+$/, '') + "widget"
             }]
         };
     </script>
@@ -116,7 +116,7 @@
         var drawToolbar;
         var directionalSymbols = [];
 
-        require(["esri/map", "esri/Color", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "./ncam/DirectionalLineSymbol.js",
+        require(["esri/map", "esri/Color", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "./widget/DirectionalLineSymbol.js",
                "esri/symbols/SimpleMarkerSymbol", "esri/symbols/PictureMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/symbols/SimpleFillSymbol", "esri/toolbars/draw", "esri/dijit/Print", "esri/config", "esri/request",
                 "dojo/ready", "dojo/dom", "dojo/on"],
         function (Map, Color, GraphicsLayer, Graphic, Polyline, Polygon, DirectionalLineSymbol,
@@ -142,26 +142,25 @@
 
                     //example using a picture marker symbol.
                     var picSymbol = new PictureMarkerSymbol();
-                    picSymbol.setUrl("ncam/filled-arrow.png");
+                    picSymbol.setUrl("widget/filled-arrow.png");
                     picSymbol.setHeight(12);
                     picSymbol.setWidth(12);
 
                     //add a basic polyline
                     var basicOptions = {
-                        style: SimpleLineSymbol.STYLE_DASHDOTDOT,
+                        style: SimpleLineSymbol.STYLE_SOLID,
                         color: new Color([0, 0, 0]),
                         width: 2,
                         directionSymbol: picSymbol,
-                        directionPixelBuffer: 40,
-                        animateLine: true
+                        directionPixelBuffer: 40
                     };
 
                     var basicSymbol = new DirectionalLineSymbol(basicOptions);
                     var basicPolyline = new Polyline([[119, -23], [126, -20], [134, -22], [133, -12], [133.2, -12.3]]);
                     var bg = new Graphic(basicPolyline, basicSymbol, {}, null);
                     graphicsLayer.add(bg);
-
                     directionalSymbols.push(basicSymbol);
+
 
                     //add a polyline with 3 paths
                     var advOptions = {
@@ -197,6 +196,24 @@
                     graphicsLayer.add(pg);
                     directionalSymbols.push(pgSymbol);
 
+
+                    // Add animated line -- no arrows
+                    var basicOptions = {
+                        style: SimpleLineSymbol.STYLE_DASHDOTDOT,
+                        color: new Color([0, 0, 0]),
+                        width: 2,
+                        animateLine: true
+                    };
+
+                    var basicSymbol = new DirectionalLineSymbol(basicOptions);
+                    var basicPolyline = new Polyline([[137, -3], [144, -5]]);
+                    var bg = new Graphic(basicPolyline, basicSymbol, {}, null);
+                    graphicsLayer.add(bg);
+
+                    directionalSymbols.push(basicSymbol);
+
+
+                    // Initialize drawing toolbar
                     var drawOptions = {
                         style: SimpleLineSymbol.STYLE_SOLID,
                         color: new Color([255, 102, 0]),
@@ -279,8 +296,6 @@
 
 
     </script>
-
-
 </head>
 <body>
 
