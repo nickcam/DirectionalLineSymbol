@@ -1,32 +1,32 @@
 define([
-  "dojo/_base/declare",
-  "dojo/_base/lang",
-  "dojo/_base/array",
-  "dojo/query",
-  "dojo/dom",
-  "dojo/dom-construct",
-  "dojo/dom-style",
-  "dojox/gfx",
+    "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/_base/array",
+    "dojo/query",
+    "dojo/dom",
+    "dojo/dom-construct",
+    "dojo/dom-style",
+    "dojox/gfx",
 
-  "esri/geometry/screenUtils",
-  "esri/symbols/SimpleLineSymbol",
-  "esri/symbols/SimpleMarkerSymbol",
-  "esri/symbols/PictureMarkerSymbol",
-  "esri/graphic",
-  "esri/geometry/Point",
-  "esri/geometry/ScreenPoint",
+    "esri/geometry/screenUtils",
+    "esri/symbols/SimpleLineSymbol",
+    "esri/symbols/SimpleMarkerSymbol",
+    "esri/symbols/PictureMarkerSymbol",
+    "esri/graphic",
+    "esri/geometry/Point",
+    "esri/geometry/ScreenPoint",
 
-  "dojo/dom-attr",
+    "dojo/dom-attr",
 
-  "dojo/_base/fx",
-  "dojo/fx",
-  "dojox/gfx/fx",
-  "dojo/on"
+    "dojo/_base/fx",
+    "dojo/fx",
+    "dojox/gfx/fx",
+    "dojo/on"
 ], function (
-  declare, lang, array, query, dom, domConstruct, domStyle, gfx,
-  screenUtils, SimpleLineSymbol, SimpleMarkerSymbol, PictureMarkerSymbol, Graphic, Point, ScreenPoint,
-  domAttr,
-  fx, coreFx, shapeFx, on
+    declare, lang, array, query, dom, domConstruct, domStyle, gfx,
+    screenUtils, SimpleLineSymbol, SimpleMarkerSymbol, PictureMarkerSymbol, Graphic, Point, ScreenPoint,
+    domAttr,
+    fx, coreFx, shapeFx, on
 ) {
     return declare([SimpleLineSymbol], {
         constructor: function (options) {
@@ -84,10 +84,10 @@ define([
         getStroke: function () {
             //Use getStroke to init the direction graphics
 
-            if(this.useDirectionGraphic){
+            if (this.useDirectionGraphic) {
                 //Get the graphic, walk the call stack up. Do it slightly differently depending on whether it's a polyline or polygon, (SimpleLineSymbol or SimpleFillSymbol)
                 var graphic = arguments.callee.caller.arguments.length > 0 ? arguments.callee.caller.arguments[4] : arguments.callee.caller.caller.arguments[4];
-                if(graphic && (graphic.dlsSymbolGroup == null || graphic.dlsSymbolGroup == undefined)){
+                if (graphic && (graphic.dlsSymbolGroup == null || graphic.dlsSymbolGroup == undefined)) {
                     this.graphics.push(graphic);
 
                     //create a group for this graphics direction symbols
@@ -170,9 +170,9 @@ define([
                     }
                 }
             }
-            if(this.animateLine){
+            if (this.animateLine) {
                 var svgNode = arguments.callee.caller.arguments.length > 0 ? arguments.callee.caller.arguments[0].rawNode : arguments.callee.caller.caller.arguments[0].rawNode;
-                if(svgNode.tagName == "path" && array.indexOf(svgNode.classList, "dls-line") == -1){
+                if (svgNode.tagName == "path" && array.indexOf(svgNode.classList, "dls-line") == -1) {
                     // Note: this only adds the class, CSS must be applied 
                     svgNode.classList.add("dls-line");
                 }
@@ -193,8 +193,7 @@ define([
             if (geometry.spatialReference.wkid !== map.spatialReference.wkid) {
                 if (!esri.geometry.canProject(geometry, map)) {
                     console.error("Can't project geometry wkid - " + geometry.spatialReference.wkid + " to map wkid " + map.spatialReference.wkid);
-                }
-                else {
+                } else {
                     geometry = esri.geometry.project(geometry, map);
                 }
             }
@@ -235,16 +234,14 @@ define([
 
                         if (this.directionSymbol.type === "simplemarkersymbol" || this.directionSymbol.type === "picturemarkersymbol") {
                             sym = lang.clone(this.directionSymbol);
-                        }
-                        else if (typeof this.directionSymbol === "string") {
+                        } else if (typeof this.directionSymbol === "string") {
                             //if directionSymbol is a string, set the path of a simple marker symbol to the one the predefined paths if it is set to one of those, or set the path to the string. 
                             sym = new SimpleMarkerSymbol();
                             sym.setSize(this.directionSize)
-                                    .setPath(this.directionSymbols[this.directionSymbol] ? this.directionSymbols[this.directionSymbol] : this.directionSymbol)
-                                    .setOutline(null)
-                                    .setColor(this.directionColor)
-                        }
-                        else {
+                                .setPath(this.directionSymbols[this.directionSymbol] ? this.directionSymbols[this.directionSymbol] : this.directionSymbol)
+                                .setOutline(null)
+                                .setColor(this.directionColor)
+                        } else {
                             console.error("directionSymbol must be set to one of the pre-defined strings {'arrow1', 'arrow2', 'arrow3', 'arrow4'}, or a SimpleMarkerSymbol or PictureMarkerSymbol.");
                         }
 
@@ -252,7 +249,9 @@ define([
                         sym.setAngle(angle);
                         var g = new Graphic();
                         g.setSymbol(sym);
-                        g.attributes = { isDirectionalGraphic: true };
+                        g.attributes = {
+                            isDirectionalGraphic: true
+                        };
                         var sp = new ScreenPoint(directionPoints[x][0], directionPoints[x][1]);
                         var mp = map.toMap(sp);
                         g.geometry = mp;
@@ -376,7 +375,10 @@ define([
 
             //Just does a fade-in in order of each direction symbol - could be changed to do some other animation
             dojo.query(".dls-symbol", g.dlsSymbolGroup.rawNode).forEach(function (path) {
-                fx.fadeOut({ node: path, duration: 10 }).play();
+                fx.fadeOut({
+                    node: path,
+                    duration: 10
+                }).play();
                 var fi = fx.fadeIn({
                     node: path,
                     duration: dur
@@ -390,8 +392,7 @@ define([
                 if (!isNaN(repeat) && repeat > 1) {
                     repeat--;
                     this._animateGraphic(g, repeat);
-                }
-                else if (repeat === Infinity) {
+                } else if (repeat === Infinity) {
                     this._animateGraphic(g, repeat);
                 }
             }));
@@ -409,7 +410,10 @@ define([
                 var g = this.graphics[i];
                 if (g.dlsSymbolGroup) {
                     dojo.query(".dls-symbol", g.dlsSymbolGroup.rawNode).forEach(function (path) {
-                        fx.fadeIn({ node: path, duration: 10 }).play();
+                        fx.fadeIn({
+                            node: path,
+                            duration: 10
+                        }).play();
                     });
 
                     g.dlsAnimationRepeat = 0;
@@ -446,4 +450,3 @@ define([
 
     });
 });
-
