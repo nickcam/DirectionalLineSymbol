@@ -1,116 +1,126 @@
 ﻿<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
+
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-
     <title>Directional Line Symbol</title>
     <link rel="stylesheet" href="http://js.arcgis.com/3.15/esri/css/esri.css">
     <link rel="stylesheet" href="http://js.arcgis.com/3.15/dijit/themes/claro/claro.css">
-
     <style>
-        html, body {
-            height: 100%;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, Calibri;
+    html,
+    body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Calibri;
+    }
+    
+    #map {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        position: relative;
+    }
+    
+    #options {
+        position: absolute;
+        z-index: 1000;
+        bottom: 0;
+        left: 0;
+        font-size: 0.8em;
+        background-color: rgba(0, 0, 0, 0.7);
+        width: 100%;
+        padding: 8px 0 10px 20px;
+        color: #FFF;
+        font-weight: bold;
+    }
+    
+    #options select {
+        height: 25px;
+        border-radius: 5px;
+        margin-right: 20px;
+    }
+    
+    #options button,
+    .esriPrintButton {
+        height: 25px;
+        /*border-radius: 5px;*/
+        margin: 0 10px 0 0;
+        background: #e5e5e5;
+        border: 1px solid #b5b5b5;
+        color: #333;
+        padding: 0 10px;
+    }
+    
+    .esriPrintButton .dijitButtonNode {
+        border: none;
+        color: #333;
+        font-weight: normal;
+        margin-top: 3px;
+    }
+    
+    .esriPrintout {
+        color: #FFF;
+    }
+    
+    #stats {
+        position: absolute;
+        bottom: 15px;
+        left: 20px;
+        font-size: 1.1em;
+        z-index: 1000;
+    }
+    
+    .esriPrint {
+        display: inline;
+        padding: 0;
+    }
+    
+    @keyframes dlsLine {
+        from {
+            stroke-dashoffset: 1000;
         }
-
-        #map {
-            width: 100%;
-            height: 100%;
-            padding: 0;
-            margin: 0;
-            position: relative;
-        }
-
-        #options {
-            position: absolute;
-            z-index: 1000;
-            bottom: 0;
-            left: 0;
-            font-size: 0.8em;
-            background-color: rgba(0,0,0,0.7);
-            width: 100%;
-            padding: 8px 0 10px 20px;
-            color: #FFF;
-            font-weight: bold;
-        }
-
-            #options select {
-                height: 25px;
-                border-radius: 5px;
-                margin-right: 20px;
-            }
-
-            #options button, .esriPrintButton {
-                height: 25px;
-                /*border-radius: 5px;*/
-                margin: 0 10px 0 0;
-                background: #e5e5e5;
-                border: 1px solid #b5b5b5;
-                color: #333;
-                padding: 0 10px;
-            }
-
-                .esriPrintButton .dijitButtonNode {
-                    border: none;
-                    color: #333;
-                    font-weight: normal;
-                    margin-top: 3px;
-                }
-
-        .esriPrintout {
-            color: #FFF;
-        }
-
-        #stats {
-            position: absolute;
-            bottom: 15px;
-            left: 20px;
-            font-size: 1.1em;
-            z-index: 1000;
-        }
-
-        .esriPrint {
-            display: inline;
-            padding: 0;
-        }
+    }
+    
+    svg>g>path.dls-line {
+        animation: dlsLine;
+        animation-duration: 45s;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+    }
     </style>
-
-
     <script>
-        var dojoConfig = {
-            parseOnLoad: false,
-            async: true,
-            tlmSiblingOfDojo: false,
-            packages: [{
-                name: "ncam",
-                location: location.pathname.replace(/\/[^/]+$/, '') + "ncam"
-            }]
-        };
+    var dojoConfig = {
+        parseOnLoad: false,
+        async: true,
+        tlmSiblingOfDojo: false,
+        packages: [{
+            name: "widget",
+            location: location.pathname.replace(/\/[^/]+$/, '') + "widget"
+        }]
+    };
     </script>
-
     <script src="http://js.arcgis.com/3.15/"></script>
-
     <script type="text/javascript">
+    var map;
+    var drawToolbar;
+    var directionalSymbols = [];
 
-        var map;
-        var drawToolbar;
-        var directionalSymbols = [];
-
-        require(["esri/map", "esri/Color", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "ncam/DirectionalLineSymbol",
-               "esri/symbols/SimpleMarkerSymbol", "esri/symbols/PictureMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/symbols/SimpleFillSymbol", "esri/toolbars/draw", "esri/dijit/Print", "esri/config", "esri/request",
-                "dojo/ready", "dojo/dom", "dojo/on"],
-        function (Map, Color, GraphicsLayer, Graphic, Polyline, Polygon, DirectionalLineSymbol,
+    require(["esri/map", "esri/Color", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "./widget/DirectionalLineSymbol.js",
+            "esri/symbols/SimpleMarkerSymbol", "esri/symbols/PictureMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/symbols/SimpleFillSymbol", "esri/toolbars/draw", "esri/dijit/Print", "esri/config", "esri/request",
+            "dojo/ready", "dojo/dom", "dojo/on"
+        ],
+        function(Map, Color, GraphicsLayer, Graphic, Polyline, Polygon, DirectionalLineSymbol,
             SimpleMarkerSymbol, PictureMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol, Draw, Print, config, request,
             ready, dom, on) {
 
-            ready(function () {
+            ready(function() {
 
                 //for the sample print server
                 esriConfig.defaults.io.corsEnabledServers.push("sampleserver6.arcgisonline.com");
@@ -122,14 +132,16 @@
                     minZoom: 3
                 });
 
-                map.on("load", function () {
+                map.on("load", function() {
 
-                    var graphicsLayer = new GraphicsLayer({ id: "graphicsLayer" });
+                    var graphicsLayer = new GraphicsLayer({
+                        id: "graphicsLayer"
+                    });
                     map.addLayer(graphicsLayer);
 
                     //example using a picture marker symbol.
                     var picSymbol = new PictureMarkerSymbol();
-                    picSymbol.setUrl("ncam/filled-arrow.png");
+                    picSymbol.setUrl("widget/filled-arrow.png");
                     picSymbol.setHeight(12);
                     picSymbol.setWidth(12);
 
@@ -139,15 +151,21 @@
                         color: new Color([0, 0, 0]),
                         width: 2,
                         directionSymbol: picSymbol,
-                        directionPixelBuffer: 40,
+                        directionPixelBuffer: 40
                     };
 
                     var basicSymbol = new DirectionalLineSymbol(basicOptions);
-                    var basicPolyline = new Polyline([[119, -23], [126, -20], [134, -22], [133, -12], [133.2, -12.3]]);
+                    var basicPolyline = new Polyline([
+                        [119, -23],
+                        [126, -20],
+                        [134, -22],
+                        [133, -12],
+                        [133.2, -12.3]
+                    ]);
                     var bg = new Graphic(basicPolyline, basicSymbol, {}, null);
                     graphicsLayer.add(bg);
-
                     directionalSymbols.push(basicSymbol);
+
 
                     //add a polyline with 3 paths
                     var advOptions = {
@@ -160,9 +178,26 @@
                         directionSize: 14
                     };
                     var advSymbol = new DirectionalLineSymbol(advOptions);
-                    var advPolyline = new Polyline([[[119, -28], [126, -25], [134, -27], [140, -20]],
-                                                    [[119, -30], [126, -27], [134, -29], [140, -22]],
-                                                    [[140, -24], [134, -31], [126, -29], [119, -32]]]);
+                    var advPolyline = new Polyline([
+                        [
+                            [119, -28],
+                            [126, -25],
+                            [134, -27],
+                            [140, -20]
+                        ],
+                        [
+                            [119, -30],
+                            [126, -27],
+                            [134, -29],
+                            [140, -22]
+                        ],
+                        [
+                            [140, -24],
+                            [134, -31],
+                            [126, -29],
+                            [119, -32]
+                        ]
+                    ]);
                     var ag = new Graphic(advPolyline, advSymbol, {}, null);
                     graphicsLayer.add(ag);
                     directionalSymbols.push(advSymbol);
@@ -178,11 +213,38 @@
                     };
                     var pgSymbol = new DirectionalLineSymbol(pgOptions);
                     var polygonSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, pgSymbol, new Color([0, 255, 0, 0.4]));
-                    var polygon = new Polygon([[143, -26], [152, -29], [146, -36], [138, -33], [143, -26]]);
+                    var polygon = new Polygon([
+                        [143, -26],
+                        [152, -29],
+                        [146, -36],
+                        [138, -33],
+                        [143, -26]
+                    ]);
                     var pg = new Graphic(polygon, polygonSymbol, {}, null);
                     graphicsLayer.add(pg);
                     directionalSymbols.push(pgSymbol);
 
+
+                    // Add animated line -- no arrows
+                    var basicOptions = {
+                        style: SimpleLineSymbol.STYLE_DASHDOTDOT,
+                        color: new Color([0, 0, 0]),
+                        width: 2,
+                        animateLine: true
+                    };
+
+                    var basicSymbol = new DirectionalLineSymbol(basicOptions);
+                    var basicPolyline = new Polyline([
+                        [137, -3],
+                        [144, -5]
+                    ]);
+                    var bg = new Graphic(basicPolyline, basicSymbol, {}, null);
+                    graphicsLayer.add(bg);
+
+                    directionalSymbols.push(basicSymbol);
+
+
+                    // Initialize drawing toolbar
                     var drawOptions = {
                         style: SimpleLineSymbol.STYLE_SOLID,
                         color: new Color([255, 102, 0]),
@@ -201,7 +263,7 @@
                     drawToolbar.setLineSymbol(drawLineSymbol);
                     drawToolbar.setFillSymbol(drawFillSymbol);
 
-                    drawToolbar.on("draw-end", function (e) {
+                    drawToolbar.on("draw-end", function(e) {
                         this.deactivate();
                         var symbol = e.geometry.type === "polyline" ? drawLineSymbol : drawFillSymbol;
                         var g = new Graphic(e.geometry, symbol, {}, null);
@@ -218,7 +280,7 @@
                 }, dom.byId("print-map"));
                 printer.startup();
 
-                on(dom.byId("animation-repeat"), "change", function () {
+                on(dom.byId("animation-repeat"), "change", function() {
                     //set up animation repeat for all of the DirectionalLineSymbol's created earlier
                     for (var i = 0, len = directionalSymbols.length; i < len; i++) {
                         directionalSymbols[i].stopAnimation();
@@ -229,7 +291,7 @@
                     }
                 });
 
-                on(dom.byId("animation-duration"), "change", function () {
+                on(dom.byId("animation-duration"), "change", function() {
                     //set up animation duration for all of the DirectionalLineSymbol's created earlier
                     var repeat = dom.byId("animation-repeat").value;
                     if (!repeat) return;
@@ -242,19 +304,19 @@
                 });
 
 
-                on(dom.byId("draw-polyline"), "click", function () {
+                on(dom.byId("draw-polyline"), "click", function() {
                     drawToolbar.activate(Draw.POLYLINE);
                 });
 
-                on(dom.byId("draw-freehand"), "click", function () {
+                on(dom.byId("draw-freehand"), "click", function() {
                     drawToolbar.activate(Draw.FREEHAND_POLYLINE);
                 });
 
-                on(dom.byId("draw-polygon"), "click", function () {
+                on(dom.byId("draw-polygon"), "click", function() {
                     drawToolbar.activate(Draw.POLYGON);
                 });
 
-                on(dom.byId("draw-fh-polygon"), "click", function () {
+                on(dom.byId("draw-fh-polygon"), "click", function() {
                     drawToolbar.activate(Draw.FREEHAND_POLYGON);
                 });
 
@@ -262,18 +324,12 @@
 
 
         });
-
-
     </script>
-
-
 </head>
+
 <body>
-
     <div id="map">
-
         <div id="options">
-
             <label>Animation repeat:</label>
             <select id="animation-repeat">
                 <option value="">no animation</option>
@@ -283,7 +339,6 @@
                 <option value="15">15</option>
                 <option value="Infinity">Infinity</option>
             </select>
-
             <label>Animation duration:</label>
             <select id="animation-duration">
                 <option value="150">150</option>
@@ -291,18 +346,13 @@
                 <option value="350" selected="selected">350</option>
                 <option value="450">450</option>
             </select>
-
-
             <button id="draw-polyline">Draw polyline</button>
             <button id="draw-freehand">Draw freehand polyline</button>
             <button id="draw-polygon">Draw polygon</button>
             <button id="draw-fh-polygon">Draw freehand polygon</button>
-
             <span id="print-map"></span>
-
         </div>
-
     </div>
-
 </body>
+
 </html>

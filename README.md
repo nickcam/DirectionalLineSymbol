@@ -1,7 +1,7 @@
 # DirectionalLineSymbol
 ArcGIS javascript custom Line Symbol.
 
-DirectionalLineSymbol inherits from SimpleLineSymbol. It displays directional symbols on the line that indicate the direction of the line.
+DirectionalLineSymbol inherits from SimpleLineSymbol. It displays directional symbols on the line that indicate the direction of the line.  It also adds the ability to animate the line itself using CSS animations for an SVG \<path\>.
 I needed some arrow symobls on my lines (in a feature or graphics layer) to indicate direction but I just wanted to be able to do it in one place.
 
 ## Features
@@ -12,9 +12,10 @@ I needed some arrow symobls on my lines (in a feature or graphics layer) to indi
 - Set the amount of pixels in between each direction symbol to space them appropriately depending on the data.
 - Just for fun animate the direction symbols appearing along the line.
 - All logic contained in the DirectionalLineSymbol class, no need to create seperate renderers or add attributes to graphics (or use text symbols).
+- Styled and animated lines defined by user in external CSS file.  (TODO: add configurable line animation settings into constructor.)
 
 ## Note
-Normallly symbol classes are really just used to define how a graphic will appear, but to actually draw the directional symbols along the line DirectionalLineSymbol
+Normally symbol classes are really just used to define how a graphic will appear, but to actually draw the directional symbols along the line DirectionalLineSymbol
 breaks that paradigm. I wanted something super simple to call from anywhere - ie: without having to 
 create a symbol class and a renderer and possibly other stuff, so just wanted to do -
 ```
