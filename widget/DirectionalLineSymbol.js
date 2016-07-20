@@ -181,7 +181,7 @@ define([
                 var svgNode = arguments.callee.caller.arguments.length > 0 ? arguments.callee.caller.arguments[0].rawNode : arguments.callee.caller.caller.arguments[0].rawNode;
                 if (svgNode.tagName == "path" && array.indexOf(svgNode.classList, "dls-line") == -1) {
                     // Note: this only adds the class, CSS must be applied 
-                    this.classes.forEach(function(className){
+                    this.classes.forEach(function (className) {
                         svgNode.classList.add(className);
                     });
                 }
