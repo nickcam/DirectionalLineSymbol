@@ -6,55 +6,74 @@
   "dojo/dom-construct",
   "dojo/dom-style",
   "dojox/gfx",
+
   "esri/geometry/screenUtils",
   "esri/symbols/SimpleLineSymbol",
+  "esri/symbols/SimpleMarkerSymbol",
+  "esri/symbols/PictureMarkerSymbol",
+  "esri/graphic",
+  "esri/geometry/Point",
+  "esri/geometry/ScreenPoint",
+
   "dojo/_base/fx",
   "dojo/fx",
   "dojox/gfx/fx",
   "dojo/on"
 ], function (
-  declare, lang, query, dom, domConstruct, domStyle, gfx, screenUtils, SimpleLineSymbol, fx, coreFx, shapeFx, on
+  declare, lang, query, dom, domConstruct, domStyle, gfx,
+  screenUtils, SimpleLineSymbol, SimpleMarkerSymbol, PictureMarkerSymbol, Graphic, Point, ScreenPoint,
+  fx, coreFx, shapeFx, on
 ) {
     return declare([SimpleLineSymbol], {
         constructor: function (options) {
             /* options description:
                 Same options as a SimpleLineSymbol - the extra options described below:
                 
-                directionColor (dojo.Color): default 'color of SimpleLineSymbol - this.color'. The color of the direction symbol. Will default to whatever this.color is - ie: the color of the SimpleLineSymbol.
-                directionFillColor (dojo.Color):  default 'color of SimpleLineSymbol - this.color'. The color of the fill of the direction symbol if it has an area to fill. Will default to whatever this.color is - ie: the color of the SimpleLineSymbol.
-                directionScale (number): default 1. The scale to apply to the direction symbols that will affect their size. 1 = original size of path, 0.5 = 50% of size, 2 = 200%
-                directionStyle (string): default 'arrow1'. The definition of the path to apply. It can be one of the prefilled direction symbols, 'arrow1', 'arrow2', 'arrow3' or 'doublePointer'. Or you can pass in any path string. any custom path should point to the direct left '<--' so the angle settings will work.
+                directionSymbol (string or SimpleMarkerSymbol or PictureMarkerSymbol): default 'arrow1'.
+                                 This can be one of four things
+                                 1) a string that is one of the pre-defined paths, 'arrow1', 'arrow2', 'arrow3' or 'arrow4'
+                                 2) a string that represents a path attrbiute value to apply to the graphic. Should point to the left <-- and the angle calcs will take care of positioning.
+                                 3) A PictureMarkerSymbol. The picture should be pointed to the left <-- and the angle cals will position it.
+                                 4) A SimpleMarker Symbol. Could be a standard one or one with a custom path. If a custom path, could just pass the path as a string as in option 2. Also position pointing left.
+                
+                directionSize (number): default 12. The size of the direction symbol.
+                directionColor (esri/Color): default 'color of SimpleLineSymbol - this.color'. The color of the direction symbol. Will default to whatever this.color is - ie: the color of the SimpleLineSymbol.
                 directionPixelBuffer (number) : default 40. This is the gap in pixels between each direction symbol. If the length of a line segment is less than this amount no direction symbol will be drawn on that segment,
                 animationRepeat (number): default undefined. If set the direction symbol will animate displying along the line. The value sets how many time to repeat the whole animation. Use Infinity to go forever. Can also just be set when calling animateDirection() after instantiation.
                 animationDuration (number): default 350. Only used if animationRepeat is set. This is the amount of milliseconds each invidual animation will take to complete. Lower values mean quicker animations.
             */
 
             this.inherited(arguments);
-            this.style = options.style;
-            this.color = options.color;
-            this.width = options.width;
+
+            this.setStyle(options.style);
+            this.setColor(options.color);
+            this.setWidth(options.width);
+
 
             this.directionSymbols = {
-                arrow1: "M 0,0 -0.05076273,-5.3788072 -12.5,0 0.07550633,5 Z",
-                arrow2: "M 0.0,0.0 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z",
-                arrow3: "M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z",
-                doublePointer: "M 1.678221,0.39284204 13.844722,-7.2154034 1.590332,0.39284204 13.969015,7.46527 Z m -14,0 L -0.15527772,-7.2154034 -12.409668,0.39284204 -0.03098494,7.46527 Z"
-
+                arrow1: "m0.5,50.5c0,0 99.5,-41 99.5,-41c0,0 0.5,81.5 0.5,81.5c0,0 -100,-40.5 -100,-40.5z",
+                arrow2: "M1,50l99.5,-50c0,0 -40,49.5 -40,49.5c0,0 39.5,50 39.5,50c0,0 -99,-49.5 -99,-49.5z",
+                arrow3: "m0.5,50.5l90,-50l9,9.5l-79.5,40.5l80,39.5l-10,10.5l-89.5,-50z",
+                arrow4: "m55.4605,51.5754l43.0685,-48.2908l-43.3797,48.2908l43.8197,44.8899l-43.5085,-44.8899zm-6.0505,42.3899l-0.44,-88.1807l-43.37967,45.7908l43.81967,42.3899z"
             };
 
             this.directionColor = options.directionColor || this.color; //a color for the direction symbol, default to the line color
-            this.directionFillColor = options.directionFillColor || this.directionColor; //a color for the fill. default to color of direction symbol.
-            this.directionScale = options.directionScale || 1; //default 1. The scale of the direction graphic. 1 = 100%. 0.5 = 50%, 2 = 200%.
-            this.directionStyle = options.directionStyle || "arrow1";
+
+            this.directionSize = options.directionSize || 12;
             this.directionPixelBuffer = options.directionPixelBuffer || 40; //number, default 40. the amount of pixels in between each symbol on the line. If a segment of the lines length is less than this pixel length a symbol won't be added to that segment.
             this.animationRepeat = options.animationRepeat; //number : default undefined: the animation repeat to apply. If set will start animating straight away.
             this.animationDuration = options.animationDuration || 350; //number default 350. The milliseconds to fade in when animating
+
+            this.directionSymbol = options.directionSymbol || "arrow1";
 
             this.graphics = [];
 
             this.drawGraphicDirection = this._drawDirection;
             this.type = "DirectionalLineSymbol";
+
+
         },
+
 
         getStroke: function () {
             //Use getStroke to init the direction graphics
@@ -74,6 +93,7 @@
             //create a group for this graphics direction symbols
             var layer = graphic.getLayer();
             var map = layer.getMap();
+
             graphic.dlsSymbolGroup = layer._div.createGroup();
 
             //draw the direction symbols for the first time
@@ -83,14 +103,15 @@
             if (!layer.dlsGraphicRemove) {
                 layer.dlsGraphicRemove = layer.on("graphic-remove", function (e) {
                     if (e.graphic.dlsSymbolGroup) {
-                        //remove all direction symbols if the graphic has any
+                        //remove all direction symbols if the graphic has any and destroy the group node
                         dojo.query(".dls-symbol", e.graphic.dlsSymbolGroup.rawNode).forEach(dojo.destroy);
+                        dojo.destroy(e.graphic.dlsSymbolGroup.rawNode);
                         e.graphic.dlsSymbolGroup = null;
                     }
                 });
             }
 
-            //add a graphic draw event if the layer of this graphic is the map.graphics layer. This is so the draw toolbar will refresh will symbols when drawing
+            //add a graphic draw event if the layer of this graphic is the map.graphics layer. This is so the draw toolbar will refresh with symbols when drawing
             if (!map.graphics.dlsGraphicDraw) {
                 map.graphics.dlsGraphicDraw = map.graphics.on("graphic-draw", function (e) {
                     if (e.graphic.dlsSymbolGroup) {
@@ -103,17 +124,25 @@
                 });
             }
 
-            var map = layer.getMap();
             if (!map.dlsExtChanged) {
                 map.dlsExtChanged = map.on("extent-change", function (e) {
                     //loop the map graphics layer looking for directional line symnbols
                     for (var i = 0, len = this.graphics.graphics.length; i < len; i++) {
                         var g = this.graphics.graphics[i];
                         if (!g.symbol) continue;
+
+                        if (g.attributes && g.attributes.isDirectionalGraphic) {
+                            this.graphics.remove(g);                            
+                            i--;
+                            len--;
+                            continue;
+                        }
+
                         var sym = g.symbol.type === "DirectionalLineSymbol" ? g.symbol : g.symbol.outline && g.symbol.outline.type === "DirectionalLineSymbol" ? g.symbol.outline : null;
                         if (sym) {
                             sym.drawGraphicDirection(g, layer, this);
                         }
+
                     }
 
                     //loop any other graphics layers looking for directional line symnbols
@@ -123,10 +152,20 @@
                         for (var j = 0, jLen = layer.graphics.length; j < jLen; j++) {
                             var g = layer.graphics[j];
                             if (!g.symbol) continue;
+
+                            if (g.attributes && g.attributes.isDirectionalGraphic) {
+                                layer.remove(g);
+                                j--;
+                                jLen--;
+                                continue;
+                            }
+
                             var sym = g.symbol.type === "DirectionalLineSymbol" ? g.symbol : g.symbol.outline && g.symbol.outline.type === "DirectionalLineSymbol" ? g.symbol.outline : null;
                             if (sym) {
                                 sym.drawGraphicDirection(g, layer, this);
                             }
+
+
                         }
                     }
                 });
@@ -135,12 +174,6 @@
         },
 
         _drawDirection: function (graphic, graphicsLayer, map) {
-
-            //set some variables based on current options
-            this.directionStroke = { color: this.directionColor, style: "solid", width: "1" };
-            if (this.directionStyle && this.directionSymbols[this.directionStyle]) {
-                this.directionStyle = this.directionSymbols[this.directionStyle];
-            }
 
             if (!graphic.dlsSymbolGroup) {
                 return;
@@ -159,6 +192,7 @@
                 }
             }
 
+            graphic.directions = [];
             dojo.query(".dls-symbol", graphic.dlsSymbolGroup.rawNode).forEach(dojo.destroy);
 
             //use a screen geometry to calculate and create symbols.
@@ -175,7 +209,7 @@
             for (var i = 0, iLen = outerArray.length; i < iLen; i++) {
                 var line = outerArray[i];
                 for (var j = 0, jLen = line.length - 1; j < jLen; j++) {
-                    if (j == line.length) {
+                    if (j === line.length) {
                         continue;
                     }
 
@@ -189,29 +223,44 @@
                     //add a symbol shape for each direction point
                     for (var x = 0, xLen = directionPoints.length; x < xLen; x++) {
 
-                        var path = group.createPath();
-                        path.setStroke(this.directionStroke)
-                             .setShape(this.directionStyle);
+                        var sym;
+                        //get the symbol. If it's not a string (ie: one of the pre-canned symbols) it should be a SimpleMarkerSymbol or PictureMarkerSymbol.
 
-                        if (this.directionFillColor) {
-                            path.setFill(this.directionFillColor);
+                        if (this.directionSymbol.type === "simplemarkersymbol" || this.directionSymbol.type === "picturemarkersymbol") {
+                            sym = lang.clone(this.directionSymbol);
+                        }
+                        else if (typeof this.directionSymbol === "string") {
+                            //if directionSymbol is a string, set the path of a simple marker symbol to the one the predefined paths if it is set to one of those, or set the path to the string. 
+                            sym = new SimpleMarkerSymbol();
+                            sym.setSize(this.directionSize)
+                                    .setPath(this.directionSymbols[this.directionSymbol] ? this.directionSymbols[this.directionSymbol] : this.directionSymbol)
+                                    .setOutline(null)
+                                    .setColor(this.directionColor)
+                        }
+                        else {
+                            console.error("directionSymbol must be set to one of the pre-defined strings {'arrow1', 'arrow2', 'arrow3', 'arrow4'}, or a SimpleMarkerSymbol or PictureMarkerSymbol.");
                         }
 
-                        var tx = directionPoints[x][0];
-                        var ty = directionPoints[x][1];
-                        if (layerTrans) {
-                            tx -= layerTrans.dx;
-                            ty -= layerTrans.dy;
-                        }
 
-                        path.applyTransform(gfx.matrix.translate(tx, ty))
-                            .applyTransform(gfx.matrix.rotateg(angle));
+                        sym.setAngle(angle);
+                        var g = new Graphic();
+                        g.setSymbol(sym);
+                        g.attributes = { isDirectionalGraphic: true };
+                        var sp = new ScreenPoint(directionPoints[x][0], directionPoints[x][1]);
+                        var mp = map.toMap(sp);
+                        g.geometry = mp;
+                        graphicsLayer.add(g);
 
-                        if (this.directionScale !== 1) {
-                            path.applyTransform(gfx.matrix.scale(this.directionScale));
-                        }
+                        var s = g.getShape();
+                        group.add(s);
+                        g.attr("class", "dls-symbol");
+                        graphic.directions.push(g);
+                        if (!graphic.visible) g.hide();
 
-                        path.rawNode.setAttribute("class", "dls-symbol");
+                        g.origJson = g.toJson();
+                        g.toJson = this.directionGraphicToJson;
+
+
                     }
                 }
             }
@@ -221,6 +270,7 @@
             }
 
         },
+
 
         _getDirectionPoints: function (pt1, pt2, screenExtent) {
             var points = [];
@@ -274,8 +324,8 @@
             return null;
         },
 
-        setDirectionStyle: function (style) {
-            this.directionStyle = style;
+        setDirectionSymbol: function (symbol) {
+            this.directionSymbol = symbol;
             this._drawDirection();
         },
 
@@ -343,7 +393,7 @@
             try {
                 g.dlsAnimationChain.play();
             } catch (err) {
-                //TODO: Fix this. Swallow any play exception here - will occur when zooming and paths are zoomed out of screen, doens't affect other functions or the new animation.
+                //TODO: Possibly fix this. Swallow any play exception here - will occur when zooming and paths are zoomed out of screen, doens't affect other functions or the new animation.
             }
         },
 
@@ -362,7 +412,32 @@
 
                 }
             }
-        }
+        },
+
+        toJson: function () {
+            var json = this.inherited(arguments);
+            var rgba = this.color.toRgba();
+            rgba[3] = rgba[3] * 255;
+            json.color = rgba;
+            return json;
+        },
+
+
+        /*        
+         Override the directional graphics toJson method so that we can fix the angle when printing.
+         Doing this as when printed using a print task the angles of the directional symbols is incorrect.
+         Symbol and json values for angles are different for the same value (see here https://developers.arcgis.com/javascript/jsapi/esri.symbols.jsonutils-amd.html#getshapedescriptors)
+
+         But for the print task to print them correctly the json seems to need to be the same as the graphic symbol, but only the first time though, other times it will print fine.
+
+        */
+        directionGraphicToJson: function () {
+            if (this.jsonUpdated || !this.origJson.symbol || !this.origJson.symbol.angle) return this.origJson;
+            this.origJson.symbol.angle = this.origJson.symbol.angle * -1;
+            this.jsonUpdated = true;
+            return this.origJson;
+        },
+
     });
 });
 
