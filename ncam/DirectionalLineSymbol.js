@@ -132,9 +132,9 @@
                         if (!g.symbol) continue;
 
                         if (g.attributes && g.attributes.isDirectionalGraphic) {
-                            layer.remove(g);
-                            j--;
-                            jLen--;
+                            this.graphics.remove(g);                            
+                            i--;
+                            len--;
                             continue;
                         }
 
