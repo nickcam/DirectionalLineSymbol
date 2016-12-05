@@ -28,10 +28,11 @@ define([
   "dojo/_base/declare",
   "dojo/_base/lang",
   "dojo/query",
-  "dojo/dom",
+  "dojo/dom",  
   "dojo/dom-construct",
   "dojo/dom-style",
   "dojox/gfx",
+  "dojo/Stateful",
 
   "esri/geometry/screenUtils",
   "esri/symbols/SimpleLineSymbol",
@@ -47,11 +48,11 @@ define([
   "dojox/gfx/fx",
   "dojo/on"
 ], function (
-  declare, lang, query, dom, domConstruct, domStyle, gfx,
+  declare, lang, query, dom, domConstruct, domStyle, gfx, Stateful,
   screenUtils, SimpleLineSymbol, SimpleMarkerSymbol, PictureMarkerSymbol, Graphic, Point, ScreenPoint, geometryEngine,
   fx, coreFx, shapeFx, on
 ) {
-    return declare([SimpleLineSymbol], {
+    return declare([SimpleLineSymbol, Stateful], {
         constructor: function (options) {
             /* options description:
                 Same options as a SimpleLineSymbol - the extra options described below:
@@ -68,8 +69,11 @@ define([
                 directionPixelBuffer (number) : default 40. This is the gap in pixels between each direction symbol. If the length of a line segment is less than this amount no direction symbol will be drawn on that segment,
                 animationRepeat (number): default undefined. If set the direction symbol will animate displying along the line. The value sets how many time to repeat the whole animation. Use Infinity to go forever. Can also just be set when calling animateDirection() after instantiation.
                 animationDuration (number): default 350. Only used if animationRepeat is set. This is the amount of milliseconds each invidual animation will take to complete. Lower values mean quicker animations.
-                showArrowsAlongLine (bool): default false. If true, arrows will be rendered along a polyline. Rendering is based on directionPixelBuffer.
+                showDirectionalSymbols (bool): default false. If true, arrows will be rendered along a polyline. Rendering is based on directionPixelBuffer.
+                showStartSymbol (bool): default false. If true, start symbol of a polyline will be rendered.
                 startSymbol (esri/symbol/SimpleMarkerSymbol): default circle with gray fill and black outline. If set, a starting graphic simple marker symbol will be rendered indicating the first vertex of a polyline.
+                showEndSymbol (bool): default false. If true, end symbol of a polyline will be rendered.
+                endSymbol (string or SimpleMarkerSymbol or PictureMarkerSymbol): default 'arrow1': Similar to directionSymbol.
             */
 
             this.inherited(arguments);
@@ -94,7 +98,8 @@ define([
             this.animationDuration = options.animationDuration || 350; //number default 350. The milliseconds to fade in when animating
 
             this.directionSymbol = options.directionSymbol || "arrow1";
-            this.showArrowsAlongLine = options.showArrowsAlongLine || false;
+            this.showDirectionalSymbols = options.showDirectionalSymbols || true;
+            this.showStartSymbol = options.showStartSymbol || false;            
             this.startSymbol = options.startSymbol || new SimpleMarkerSymbol({
                 'color': [128, 128, 128, 64],
                 'size': 8,
@@ -107,6 +112,8 @@ define([
                     'style': 'esriSLSSolid'
                 }
             });
+            this.showEndSymbol = options.showEndSymbol || false;
+            this.endSymbol = options.endSymbol || "arrow1";
 
             this.graphics = [];
             this.map = null;
@@ -248,26 +255,28 @@ define([
             }
 
             //Create start symbol
-            var startPt = this._getFirstItem(outerArray);
-            var startG = this._createGraphic(startPt, this.startSymbol);
-            if (startG.geometry) {
-                graphicsLayer.add(startG);
+            if (this.showStartSymbol) {
+                var startPt = this._getFirstItem(outerArray);
+                var startG = this._createGraphic(startPt, this.startSymbol);
+                if (startG.geometry) {
+                    graphicsLayer.add(startG);
 
-                var startS = startG.getShape();
-                if (startS) {
-                    group.add(startS);
-                    startG.attr("class", "dls-symbol");
-                    graphic.directions.push(startG);
-                    if (!graphic.visible) startG.hide();
+                    var startS = startG.getShape();
+                    if (startS) {
+                        group.add(startS);
+                        startG.attr("class", "dls-symbol");
+                        graphic.directions.push(startG);
+                        if (!graphic.visible) startG.hide();
 
-                    startG.origJson = startG.toJson();
-                    startG.toJson = this.directionGraphicToJson;
-                } else {
-                    graphicsLayer.remove(startG);
+                        startG.origJson = startG.toJson();
+                        startG.toJson = this.directionGraphicToJson;
+                    } else {
+                        graphicsLayer.remove(startG);
+                    }
                 }
-            }    
+            }            
 
-            if (this.showArrowsAlongLine) {
+            if (this.showDirectionalSymbols) {
                 for (var i = 0, iLen = outerArray.length; i < iLen; i++) {
                     var line = outerArray[i];
                     for (var j = 0, jLen = line.length - 1; j < jLen; j++) {
@@ -284,7 +293,7 @@ define([
 
                         //add a symbol shape for each direction point
                         for (var x = 0, xLen = directionPoints.length; x < xLen; x++) {
-                            var g =  this._createGraphic(directionPoints[x], this._createSymbol(angle));
+                            var g =  this._createGraphic(directionPoints[x], this._createSymbol(this.directionSymbol, angle));
                             graphicsLayer.add(g);
 
                             var s = g.getShape();
@@ -301,27 +310,29 @@ define([
             }
 
             //Create end symbol
-            var endPt1 = this._getSecondToLastItem(outerArray);
-            if (endPt1) {
-                var endPt2 = this._getLastItem(outerArray);
-                if (endPt2) {
-                    if (!this._isEqual(endPt1, endPt2)) {
-                        var endAngle = this._getAngle(endPt1, endPt2);
-                        var endG = this._createGraphic(endPt2, this._createSymbol(endAngle));
-                        if (endG.geometry) {
-                            graphicsLayer.add(endG);
+            if (this.showEndSymbol) {
+                var endPt1 = this._getSecondToLastItem(outerArray);
+                if (endPt1) {
+                    var endPt2 = this._getLastItem(outerArray);
+                    if (endPt2) {
+                        if (!this._isEqual(endPt1, endPt2)) {
+                            var endAngle = this._getAngle(endPt1, endPt2);
+                            var endG = this._createGraphic(endPt2, this._createSymbol(this.endSymbol, endAngle));
+                            if (endG.geometry) {
+                                graphicsLayer.add(endG);
 
-                            var endS = endG.getShape();
-                            if (endS) {
-                                group.add(endS);
-                                endG.attr("class", "dls-symbol");
-                                graphic.directions.push(endG);
-                                if (!graphic.visible) endG.hide();
+                                var endS = endG.getShape();
+                                if (endS) {
+                                    group.add(endS);
+                                    endG.attr("class", "dls-symbol");
+                                    graphic.directions.push(endG);
+                                    if (!graphic.visible) endG.hide();
 
-                                endG.origJson = endG.toJson();
-                                endG.toJson = this.directionGraphicToJson;
-                            } else {
-                                graphicsLayer.remove(endG);
+                                    endG.origJson = endG.toJson();
+                                    endG.toJson = this.directionGraphicToJson;
+                                } else {
+                                    graphicsLayer.remove(endG);
+                                }
                             }
                         }
                     }
@@ -382,25 +393,25 @@ define([
             return true;
         },
 
-        _createSymbol: function (angle) {
+        _createSymbol: function (symbol, angle) {
         	//creates a symbol from a simpleMarkerSymbol, pictureMarkerSymbol or predefined SVG string
 
             var sym;
             //get the symbol. If it's not a string (ie: one of the pre-canned symbols) it should be a SimpleMarkerSymbol or PictureMarkerSymbol.
 
-            if (this.directionSymbol.type === "simplemarkersymbol" || this.directionSymbol.type === "picturemarkersymbol") {
-                sym = lang.clone(this.directionSymbol);
+            if (symbol.type === "simplemarkersymbol" || symbol.type === "picturemarkersymbol") {
+                sym = lang.clone(symbol);
             }
-            else if (typeof this.directionSymbol === "string") {
-                //if directionSymbol is a string, set the path of a simple marker symbol to the one the predefined paths if it is set to one of those, or set the path to the string. 
+            else if (typeof symbol === "string") {
+                //if symbol is a string, set the path of a simple marker symbol to the one the predefined paths if it is set to one of those, or set the path to the string. 
                 sym = new SimpleMarkerSymbol();
                 sym.setSize(this.directionSize)
-                        .setPath(this.directionSymbols[this.directionSymbol] ? this.directionSymbols[this.directionSymbol] : this.directionSymbol)
+                        .setPath(this.directionSymbols[symbol] ? this.directionSymbols[symbol] : symbol)
                         .setOutline(null)
                         .setColor(this.directionColor)
             }
             else {
-                console.error("directionSymbol must be set to one of the pre-defined strings {'arrow1', 'arrow2', 'arrow3', 'arrow4'}, or a SimpleMarkerSymbol or PictureMarkerSymbol.");
+                console.error("Symbol must be set to one of the pre-defined strings {'arrow1', 'arrow2', 'arrow3', 'arrow4'}, or a SimpleMarkerSymbol or PictureMarkerSymbol.");
             }
             sym.setAngle(angle);
             return sym;
@@ -469,8 +480,33 @@ define([
             return null;
         },
 
-        setDirectionSymbol: function (symbol) {
-            this.directionSymbol = symbol;
+        _setDirectionSymbolAttr: function (symbol) {
+            //Custom setter for directional symbol
+            this._set("directionSymbol", symbol);
+            this._drawDirection();
+        },
+
+        _setStartSymbolAttr: function (startSymbol) {
+            //Custom setter for start symbol
+            this._set("startSymbol", startSymbol);
+            this._drawDirection();
+        },
+
+        _setEndSymbolAttr: function (endSymbol) {
+            //Custom setter for end symbol
+            this._set("endSymbol", endSymbol);
+            this._drawDirection();
+        },
+
+        _setShowStartSymbolAttr: function (showStartSymbol) {
+            //Custom setter to show start symbol
+            this._set("showStartSymbol", showStartSymbol);
+            this._drawDirection();
+        },
+
+        _setShowEndSymbolAttr: function (showEndSymbol) {
+            //Custom setter to show end symbol
+            this._set("showEndSymbol", showEndSymbol);
             this._drawDirection();
         },
 
