@@ -73,7 +73,7 @@ define([
                 showStartSymbol (bool): default false. If true, start symbol of a polyline will be rendered.
                 startSymbol (esri/symbol/SimpleMarkerSymbol): default circle with gray fill and black outline. If set, a starting graphic simple marker symbol will be rendered indicating the first vertex of a polyline.
                 showEndSymbol (bool): default false. If true, end symbol of a polyline will be rendered.
-                endSymbol (string or SimpleMarkerSymbol or PictureMarkerSymbol): default 'arrow1': Similar to directionSymbol.
+                endSymbol (string or SimpleMarkerSymbol or PictureMarkerSymbol): default - this.directionSymbol: Similar to directionSymbol.
             */
 
             this.inherited(arguments);
@@ -113,7 +113,7 @@ define([
                 }
             });
             this.showEndSymbol = options.showEndSymbol || false;
-            this.endSymbol = options.endSymbol || "arrow1";
+            this.endSymbol = options.endSymbol || this.directionSymbol;
 
             this.graphics = [];
             this.map = null;

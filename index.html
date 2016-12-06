@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 
     <title>Directional Line Symbol</title>
-    <link rel="stylesheet" href="http://js.arcgis.com/3.15/esri/css/esri.css">
+    <link rel="stylesheet" href="http://js.arcgis.com/3.18/esri/css/esri.css">
     <link rel="stylesheet" href="http://js.arcgis.com/3.15/dijit/themes/claro/claro.css">
 
     <style>
@@ -87,15 +87,11 @@
         var dojoConfig = {
             parseOnLoad: false,
             async: true,
-            tlmSiblingOfDojo: false,
-            packages: [{
-                name: "ncam",
-                location: location.pathname.replace(/\/[^/]+$/, '') + "ncam"
-            }]
+            tlmSiblingOfDojo: false           
         };
     </script>
 
-    <script src="http://js.arcgis.com/3.15/"></script>
+    <script src="http://js.arcgis.com/3.18/"></script>
 
     <script type="text/javascript">
 
@@ -103,7 +99,7 @@
         var drawToolbar;
         var directionalSymbols = [];
 
-        require(["esri/map", "esri/Color", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "ncam/DirectionalLineSymbol",
+        require(["esri/map", "esri/Color", "esri/layers/GraphicsLayer", "esri/graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "./dls/DirectionalLineSymbol.js",
                "esri/symbols/SimpleMarkerSymbol", "esri/symbols/PictureMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/symbols/SimpleFillSymbol", "esri/toolbars/draw", "esri/dijit/Print", "esri/config", "esri/request",
                 "dojo/ready", "dojo/dom", "dojo/on"],
         function (Map, Color, GraphicsLayer, Graphic, Polyline, Polygon, DirectionalLineSymbol,
@@ -129,7 +125,7 @@
 
                     //example using a picture marker symbol.
                     var picSymbol = new PictureMarkerSymbol();
-                    picSymbol.setUrl("ncam/filled-arrow.png");
+                    picSymbol.setUrl("dls/filled-arrow.png");
                     picSymbol.setHeight(12);
                     picSymbol.setWidth(12);
 
@@ -140,6 +136,7 @@
                         width: 2,
                         directionSymbol: picSymbol,
                         directionPixelBuffer: 40,
+                        showStartSymbol: true
                     };
 
                     var basicSymbol = new DirectionalLineSymbol(basicOptions);
